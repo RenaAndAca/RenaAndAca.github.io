@@ -570,44 +570,51 @@
     }
 
     function updateLeaderboard() {
-      // Offline leaderboard based on localStorage, just demo
-      const list = document.getElementById("leaderboard-list");
-      list.innerHTML = "";
+  const leaderboardKey = "leaderboard_data";
+  let leaderboard = JSON.parse(localStorage.getItem(leaderboardKey)) || [];
 
-      let keys = Object.keys(localStorage).filter((k) =>
-        k.startsWith("score_")
-      );
-      keys = keys.sort((a, b) => {
-        const sa = +localStorage.getItem(a);
-        const sb = +localStorage.getItem(b);
-        return sb - sa;
-      });
+  // Cek apakah pemain sudah ada
+  const existing = leaderboard.find(p => p.name === playerName);
+  if (existing) {
+    existing.score = score;
+  } else {
+    leaderboard.push({ name: playerName, score: score });
+  }
 
-      for (const key of keys) {
-        const name = key.slice(6);
-        const val = localStorage.getItem(key);
-        const li = document.createElement("li");
-        li.textContent = `${name}: ${val} poin`;
-        list.appendChild(li);
-      }
-    }
+  // Urutkan dari skor tertinggi
+  leaderboard.sort((a, b) => b.score - a.score);
+
+  // Simpan ulang ke localStorage
+  localStorage.setItem(leaderboardKey, JSON.stringify(leaderboard));
+
+  // Render ke tampilan
+  const list = document.getElementById("leaderboard-list");
+  list.innerHTML = "";
+  leaderboard.forEach((p) => {
+    const li = document.createElement("li");
+    li.textContent = `${p.name}: ${p.score} poin`;
+    list.appendChild(li);
+  });
+}
 
     function resetLeaderboard() {
-      if (!godMode) return alert("Reset leaderboard hanya developer!");
-      if (!confirm("Reset semua skor leaderboard?")) return;
-      Object.keys(localStorage).forEach((k) => {
-        if (k.startsWith("score_") || k.startsWith("scoreBot_") || k.startsWith("lastPlayed_"))
-          localStorage.removeItem(k);
-      });
-      score = 0;
-      scoreBot = 0;
-      document.getElementById("score").textContent = score;
-      document.getElementById("scoreBot").textContent = scoreBot;
-      document.getElementById("lastPlayed").textContent = "-";
-      updateLeaderboard();
-      restartGame();
-    }
+  if (!godMode) return alert("Reset leaderboard hanya developer!");
+  if (!confirm("Reset semua skor leaderboard?")) return;
 
+  localStorage.removeItem("leaderboard_data");
+  score = 0;
+  scoreBot = 0;
+
+  localStorage.setItem(`scoreBot_${playerName}`, 0);
+  localStorage.setItem(`score_${playerName}`, 0);
+
+  document.getElementById("score").textContent = score;
+  document.getElementById("scoreBot").textContent = scoreBot;
+  document.getElementById("lastPlayed").textContent = "-";
+
+  updateLeaderboard();
+  restartGame();
+}
     function toggleGodMode() {
       godMode = !godMode;
       if (godMode) {
